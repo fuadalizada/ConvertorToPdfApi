@@ -3,11 +3,14 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Web.Http;
 using DocTypeConvertor.Models;
+using iTextSharp.text;
+using iTextSharp.text.pdf;
 using Microsoft.Office.Core;
 using Microsoft.Office.Interop.Excel;
 using Microsoft.Office.Interop.PowerPoint;
 using Microsoft.Office.Interop.Word;
 using Application = Microsoft.Office.Interop.Word.Application;
+using Document = Microsoft.Office.Interop.Word.Document;
 
 namespace DocTypeConvertor.Controllers
 {
@@ -125,8 +128,10 @@ namespace DocTypeConvertor.Controllers
             {
                 if (!File.Exists(outLocation))
                 {
-                    Microsoft.Office.Interop.PowerPoint.Application app = new Microsoft.Office.Interop.PowerPoint.Application();
-                    app.Visible = MsoTriState.msoTrue;
+                    Microsoft.Office.Interop.PowerPoint.Application app = new Microsoft.Office.Interop.PowerPoint.Application
+                    {
+                        Visible = MsoTriState.msoTrue
+                    };
                     Presentations presentations = app.Presentations;
                     Presentation presentation = presentations.Open(fileLocation, ReadOnly: MsoTriState.msoCTrue);
                     presentation.ExportAsFixedFormat(outLocation, PpFixedFormatType.ppFixedFormatTypePDF);
@@ -136,7 +141,6 @@ namespace DocTypeConvertor.Controllers
                     Marshal.ReleaseComObject(presentation);
                     app.Quit();
                     Marshal.ReleaseComObject(app);
-
                 }
                 else
                 {
@@ -146,6 +150,53 @@ namespace DocTypeConvertor.Controllers
                 if (!File.Exists(outLocation))
                 {
                     return (new ResponseModel { IsSucceed = false, ErrorMessage = outLocation + " file-ı tapılmadı." });
+                }
+
+                return (new ResponseModel { Data = outLocation, IsSucceed = true, ErrorMessage = string.Empty });
+            }
+            catch (Exception e)
+            {
+                return (new ResponseModel { IsSucceed = false, ErrorMessage = "File convert oluna bilmədi: " + e.Message });
+            }
+        }
+
+        #endregion
+
+        #region Jpeg to Pdf
+        [HttpGet]
+        [Route("api/WordToPdf/ConvertImageToPdf")]
+        public ResponseModel ConvertImageToPdf(string fileLocation, string outLocation)
+        {
+            try
+            {
+                if (!File.Exists(outLocation))
+                {
+                    var document = new iTextSharp.text.Document(PageSize.A4, 25, 25, 25, 25);
+                    using (var stream = new FileStream(outLocation, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        PdfWriter.GetInstance(document, stream);
+                        document.Open();
+                        using (var imageStream = new FileStream(fileLocation, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                        {
+                            var image = Image.GetInstance(imageStream);
+                            if (image.Height > PageSize.A4.Height - 25)
+                            {
+                                image.ScaleToFit(PageSize.A4.Width - 25, PageSize.A4.Height - 25);
+                            }
+                            else if (image.Width > PageSize.A4.Width - 25)
+                            {
+                                image.ScaleToFit(PageSize.A4.Width - 25, PageSize.A4.Height - 25);
+                            }
+                            image.Alignment = Element.ALIGN_MIDDLE;
+                            document.Add(image);
+                        }
+
+                        document.Close();
+                    }
+                }
+                else
+                {
+                    return (new ResponseModel { IsSucceed = false, ErrorMessage = outLocation + " file-ı artıq mövcuddur." });
                 }
 
                 return (new ResponseModel { Data = outLocation, IsSucceed = true, ErrorMessage = string.Empty });
