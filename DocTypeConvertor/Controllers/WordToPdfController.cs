@@ -22,16 +22,19 @@ namespace DocTypeConvertor.Controllers
         [Route("api/WordToPdf/ConvertWordToPdf")]
         public ResponseModel ConvertWordToPdf(string fileLocation, string outLocation)
         {
+            Application app = null;
+            Documents documents = null;
+            Document doc = null;
             try
             {
                 string newPath = "";
                 if (!File.Exists(outLocation))
                 {
-                    Application app = new Application();
+                    app = new Application();
                     app.Visible = false;
                     app.DisplayAlerts = WdAlertLevel.wdAlertsNone;
-                    Documents documents = app.Documents;
-                    Document doc = documents.Open(fileLocation);
+                    documents = app.Documents;
+                    doc = documents.Open(fileLocation);
                     newPath = Path.GetDirectoryName(fileLocation);
                     if (newPath != null)
                     {
@@ -79,6 +82,11 @@ namespace DocTypeConvertor.Controllers
             }
             catch (Exception e)
             {
+                Marshal.ReleaseComObject(documents);
+                doc.Close();
+                Marshal.ReleaseComObject(doc);
+                app.Quit();
+                Marshal.ReleaseComObject(app);
                 return (new ResponseModel { IsSucceed = false, ErrorMessage = "File convert oluna bilmədi: " + e.Message });
             }
         }
@@ -89,17 +97,20 @@ namespace DocTypeConvertor.Controllers
         [Route("api/WordToPdf/ConvertExcelToPdf")]
         public ResponseModel ConvertExcelToPdf(string fileLocation, string outLocation)
         {
+            Microsoft.Office.Interop.Excel.Application app = null;
+            Workbooks workbooks = null;
+            Workbook wkb = null;
             try
             {
                 if (!File.Exists(outLocation))
                 {
 
-                    Microsoft.Office.Interop.Excel.Application app = new Microsoft.Office.Interop.Excel.Application();
+                    app = new Microsoft.Office.Interop.Excel.Application();
                     app.Visible = false;
                     app.DisplayAlerts = false;
                     app.Interactive = false;
-                    Workbooks workbooks = app.Workbooks;
-                    Workbook wkb = workbooks.Open(fileLocation, ReadOnly: true);
+                    workbooks = app.Workbooks;
+                    wkb = workbooks.Open(fileLocation, ReadOnly: true);
                     wkb.ExportAsFixedFormat(XlFixedFormatType.xlTypePDF, outLocation);
 
                     Marshal.ReleaseComObject(workbooks);
@@ -121,6 +132,11 @@ namespace DocTypeConvertor.Controllers
             }
             catch (Exception e)
             {
+                Marshal.ReleaseComObject(workbooks);
+                wkb.Close();
+                Marshal.ReleaseComObject(wkb);
+                app.Quit();
+                Marshal.ReleaseComObject(app);
                 return (new ResponseModel { IsSucceed = false, ErrorMessage = "File convert oluna bilmədi: " + e.Message });
             }
 
@@ -133,16 +149,19 @@ namespace DocTypeConvertor.Controllers
         [Route("api/WordToPdf/ConvertPptToPdf")]
         public ResponseModel ConvertPptToPdf(string fileLocation, string outLocation)
         {
+            Microsoft.Office.Interop.PowerPoint.Application app = null;
+            Presentations presentations = null;
+            Presentation presentation = null;
             try
             {
                 if (!File.Exists(outLocation))
                 {
-                    Microsoft.Office.Interop.PowerPoint.Application app = new Microsoft.Office.Interop.PowerPoint.Application
+                    app = new Microsoft.Office.Interop.PowerPoint.Application
                     {
                         Visible = MsoTriState.msoTrue
                     };
-                    Presentations presentations = app.Presentations;
-                    Presentation presentation = presentations.Open(fileLocation, ReadOnly: MsoTriState.msoCTrue);
+                    presentations = app.Presentations;
+                    presentation = presentations.Open(fileLocation, ReadOnly: MsoTriState.msoCTrue);
                     presentation.ExportAsFixedFormat(outLocation, PpFixedFormatType.ppFixedFormatTypePDF);
 
                     Marshal.ReleaseComObject(presentations);
@@ -165,6 +184,11 @@ namespace DocTypeConvertor.Controllers
             }
             catch (Exception e)
             {
+                Marshal.ReleaseComObject(presentations);
+                presentation.Close();
+                Marshal.ReleaseComObject(presentation);
+                app.Quit();
+                Marshal.ReleaseComObject(app);
                 return (new ResponseModel { IsSucceed = false, ErrorMessage = "File convert oluna bilmədi: " + e.Message });
             }
         }
@@ -176,11 +200,12 @@ namespace DocTypeConvertor.Controllers
         [Route("api/WordToPdf/ConvertImageToPdf")]
         public ResponseModel ConvertImageToPdf(string fileLocation, string outLocation)
         {
+            iTextSharp.text.Document document = null;
             try
             {
                 if (!File.Exists(outLocation))
                 {
-                    var document = new iTextSharp.text.Document(PageSize.A4, 25, 25, 25, 25);
+                    document = new iTextSharp.text.Document(PageSize.A4, 25, 25, 25, 25);
                     using (var stream = new FileStream(outLocation, FileMode.Create, FileAccess.Write, FileShare.None))
                     {
                         PdfWriter.GetInstance(document, stream);
@@ -212,6 +237,7 @@ namespace DocTypeConvertor.Controllers
             }
             catch (Exception e)
             {
+                document.Close();
                 return (new ResponseModel { IsSucceed = false, ErrorMessage = "File convert oluna bilmədi: " + e.Message });
             }
         }
