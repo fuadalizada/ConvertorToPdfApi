@@ -42,11 +42,21 @@ namespace DocTypeConvertor.Controllers
                         }
                         else
                         {
+                            Marshal.ReleaseComObject(documents);
+                            doc.Close();
+                            Marshal.ReleaseComObject(doc);
+                            app.Quit();
+                            Marshal.ReleaseComObject(app);
                             return (new ResponseModel { IsSucceed = false, ErrorMessage = newPath + " file-ı artıq mövcuddur." });
                         }
                     }
                     else
                     {
+                        Marshal.ReleaseComObject(documents);
+                        doc.Close();
+                        Marshal.ReleaseComObject(doc);
+                        app.Quit();
+                        Marshal.ReleaseComObject(app);
                         return (new ResponseModel { IsSucceed = false, ErrorMessage = newPath + " null dəyər alıb." });
                     }
 
@@ -90,12 +100,11 @@ namespace DocTypeConvertor.Controllers
                     app.Interactive = false;
                     Workbooks workbooks = app.Workbooks;
                     Workbook wkb = workbooks.Open(fileLocation, ReadOnly: true);
-                    wkb.ExportAsFixedFormat(Microsoft.Office.Interop.Excel.XlFixedFormatType.xlTypePDF, outLocation);
+                    wkb.ExportAsFixedFormat(XlFixedFormatType.xlTypePDF, outLocation);
 
                     Marshal.ReleaseComObject(workbooks);
                     wkb.Close();
                     Marshal.ReleaseComObject(wkb);
-
                     app.Quit();
                     Marshal.ReleaseComObject(app);
                 }
